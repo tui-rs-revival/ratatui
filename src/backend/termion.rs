@@ -7,6 +7,7 @@ use crate::{
 use std::{
     fmt,
     io::{self, Write},
+    ops::{Deref, DerefMut},
 };
 
 pub struct TermionBackend<W>
@@ -35,6 +36,20 @@ where
 
     fn flush(&mut self) -> io::Result<()> {
         self.stdout.flush()
+    }
+}
+
+impl<W: Write> Deref for TermionBackend<W> {
+    type Target = W;
+
+    fn deref(&self) -> &Self::Target {
+        &self.stdout
+    }
+}
+
+impl<W: Write> DerefMut for TermionBackend<W> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.stdout
     }
 }
 

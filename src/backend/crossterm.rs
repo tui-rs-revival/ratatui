@@ -13,7 +13,10 @@ use crossterm::{
     },
     terminal::{self, Clear, ClearType},
 };
-use std::io::{self, Write};
+use std::{
+    io::{self, Write},
+    ops::{Deref, DerefMut},
+};
 
 pub struct CrosstermBackend<W: Write> {
     buffer: W,
@@ -38,6 +41,20 @@ where
 
     fn flush(&mut self) -> io::Result<()> {
         self.buffer.flush()
+    }
+}
+
+impl<W: Write> Deref for CrosstermBackend<W> {
+    type Target = W;
+
+    fn deref(&self) -> &Self::Target {
+        &self.buffer
+    }
+}
+
+impl<W: Write> DerefMut for CrosstermBackend<W> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.buffer
     }
 }
 

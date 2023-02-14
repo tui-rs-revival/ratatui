@@ -1,10 +1,16 @@
 use crate::{app::App, ui};
-use std::{error::Error, io, sync::mpsc, thread, time::Duration};
+use std::{
+    error::Error,
+    io::{self, Write},
+    sync::mpsc,
+    thread,
+    time::Duration,
+};
 use termion::{
     event::Key,
     input::{MouseTerminal, TermRead},
     raw::IntoRawMode,
-    screen::AlternateScreen,
+    screen::{ToAlternateScreen, ToMainScreen},
 };
 use tui::{
     backend::{Backend, TermionBackend},
@@ -13,15 +19,23 @@ use tui::{
 
 pub fn run(tick_rate: Duration, enhanced_graphics: bool) -> Result<(), Box<dyn Error>> {
     // setup terminal
-    let stdout = io::stdout().into_raw_mode()?;
-    let stdout = MouseTerminal::from(stdout);
-    let stdout = AlternateScreen::from(stdout);
-    let backend = TermionBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    let mut stdout = MouseTerminal::from(io::stdout()).into_raw_mode()?;
+    stdout.activate_raw_mode()?;
+    write!(stdout, "{}", ToAlternateScreen)?;
+    let mut terminal = Terminal::new(TermionBackend::new(stdout))?;
 
     // create app and run it
     let app = App::new("Termion demo", enhanced_graphics);
-    run_app(&mut terminal, app, tick_rate)?;
+    let res = run_app(&mut terminal, app, tick_rate);
+
+    // restore terminal
+    terminal.backend().suspend_raw_mode()?;
+    write!(terminal.backend_mut(), "{}", ToMainScreen)?;
+    terminal.show_cursor()?;
+
+    if let Err(err) = res {
+        println!("{:?}", err);
+    }
 
     Ok(())
 }
