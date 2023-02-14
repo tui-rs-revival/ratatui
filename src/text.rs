@@ -56,6 +56,7 @@ use unicode_width::UnicodeWidthStr;
 pub struct StyledGrapheme<'a> {
     pub symbol: &'a str,
     pub style: Style,
+    pub mask: Option<char>,
 }
 
 /// A string where all graphemes have the same style.
@@ -63,6 +64,7 @@ pub struct StyledGrapheme<'a> {
 pub struct Span<'a> {
     pub content: Cow<'a, str>,
     pub style: Style,
+    pub mask: Option<char>,
 }
 
 impl<'a> Span<'a> {
@@ -82,6 +84,7 @@ impl<'a> Span<'a> {
         Span {
             content: content.into(),
             style: Style::default(),
+            mask: None,
         }
     }
 
@@ -102,6 +105,29 @@ impl<'a> Span<'a> {
     {
         Span {
             content: content.into(),
+            style,
+            mask: None,
+        }
+    }
+
+    /// Create a span with given style and mask
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use tui::text::Span;
+    /// # use tui::style::{Color, Modifier, Style};
+    /// let style = Style::default();
+    /// Span::masked("Cool password", style, 'x');
+    /// Span::masked(String::from("You cannot see this"), style, '*');
+    /// ```
+    pub fn masked<T>(content: T, style: Style, mask: char) -> Span<'a>
+    where
+        T: Into<Cow<'a, str>>,
+    {
+        Span {
+            content: content.into(),
+            mask: Some(mask),
             style,
         }
     }
@@ -136,6 +162,7 @@ impl<'a> Span<'a> {
     ///                 add_modifier: Modifier::empty(),
     ///                 sub_modifier: Modifier::empty(),
     ///             },
+    ///             mask: None,
     ///         },
     ///         StyledGrapheme {
     ///             symbol: "e",
@@ -145,6 +172,7 @@ impl<'a> Span<'a> {
     ///                 add_modifier: Modifier::empty(),
     ///                 sub_modifier: Modifier::empty(),
     ///             },
+    ///             mask: None,
     ///         },
     ///         StyledGrapheme {
     ///             symbol: "x",
@@ -154,6 +182,7 @@ impl<'a> Span<'a> {
     ///                 add_modifier: Modifier::empty(),
     ///                 sub_modifier: Modifier::empty(),
     ///             },
+    ///             mask: None,
     ///         },
     ///         StyledGrapheme {
     ///             symbol: "t",
@@ -163,6 +192,7 @@ impl<'a> Span<'a> {
     ///                 add_modifier: Modifier::empty(),
     ///                 sub_modifier: Modifier::empty(),
     ///             },
+    ///             mask: None,
     ///         },
     ///     ],
     ///     styled_graphemes.collect::<Vec<StyledGrapheme>>()
@@ -176,6 +206,7 @@ impl<'a> Span<'a> {
             .map(move |g| StyledGrapheme {
                 symbol: g,
                 style: base_style.patch(self.style),
+                mask: self.mask,
             })
             .filter(|s| s.symbol != "\n")
     }

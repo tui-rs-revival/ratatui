@@ -55,7 +55,12 @@ impl<'a, 'b> LineComposer<'a> for WordWrapper<'a, 'b> {
         let mut width_to_last_word_end: u16 = 0;
         let mut prev_whitespace = false;
         let mut symbols_exhausted = true;
-        for StyledGrapheme { symbol, style } in &mut self.symbols {
+        for StyledGrapheme {
+            symbol,
+            style,
+            mask,
+        } in &mut self.symbols
+        {
             symbols_exhausted = false;
             let symbol_whitespace = symbol.chars().all(&char::is_whitespace) && symbol != NBSP;
 
@@ -82,7 +87,11 @@ impl<'a, 'b> LineComposer<'a> for WordWrapper<'a, 'b> {
                 width_to_last_word_end = current_line_width;
             }
 
-            self.current_line.push(StyledGrapheme { symbol, style });
+            self.current_line.push(StyledGrapheme {
+                symbol,
+                style,
+                mask,
+            });
             current_line_width += symbol.width() as u16;
 
             if current_line_width > self.max_line_width {
@@ -161,7 +170,12 @@ impl<'a, 'b> LineComposer<'a> for LineTruncator<'a, 'b> {
         let mut skip_rest = false;
         let mut symbols_exhausted = true;
         let mut horizontal_offset = self.horizontal_offset as usize;
-        for StyledGrapheme { symbol, style } in &mut self.symbols {
+        for StyledGrapheme {
+            symbol,
+            style,
+            mask,
+        } in &mut self.symbols
+        {
             symbols_exhausted = false;
 
             // Ignore characters wider that the total max width.
@@ -194,7 +208,11 @@ impl<'a, 'b> LineComposer<'a> for LineTruncator<'a, 'b> {
                 }
             };
             current_line_width += symbol.width() as u16;
-            self.current_line.push(StyledGrapheme { symbol, style });
+            self.current_line.push(StyledGrapheme {
+                symbol,
+                style,
+                mask,
+            });
         }
 
         if skip_rest {
@@ -241,8 +259,12 @@ mod test {
 
     fn run_composer(which: Composer, text: &str, text_area_width: u16) -> (Vec<String>, Vec<u16>) {
         let style = Default::default();
-        let mut styled =
-            UnicodeSegmentation::graphemes(text, true).map(|g| StyledGrapheme { symbol: g, style });
+        let mask = None;
+        let mut styled = UnicodeSegmentation::graphemes(text, true).map(|g| StyledGrapheme {
+            symbol: g,
+            style,
+            mask,
+        });
         let mut composer: Box<dyn LineComposer> = match which {
             Composer::WordWrapper { trim } => {
                 Box::new(WordWrapper::new(&mut styled, text_area_width, trim))

@@ -100,7 +100,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .margin(5)
+        .margin(2)
         .constraints(
             [
                 Constraint::Percentage(25),
@@ -123,8 +123,13 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             Style::default().bg(Color::Blue),
         )),
         Spans::from(Span::styled(
-            "This is a longer line",
+            "Text below this is masked 😃",
             Style::default().add_modifier(Modifier::CROSSED_OUT),
+        )),
+        Spans::from(Span::masked(
+            "This is masked text 😃",
+            Style::default().bg(Color::Black).fg(Color::LightGreen),
+            '*',
         )),
         Spans::from(Span::styled(&long_line, Style::default().bg(Color::Green))),
         Spans::from(Span::styled(
