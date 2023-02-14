@@ -1,7 +1,7 @@
 use tui::{
     backend::TestBackend,
     buffer::Buffer,
-    layout::Rect,
+    layout::{Constraint, Rect},
     style::{Color, Style},
     symbols,
     text::Spans,
@@ -196,5 +196,170 @@ fn widgets_list_should_repeat_highlight_symbol() {
         expected.get_mut(x, 2).set_bg(Color::Yellow);
         expected.get_mut(x, 3).set_bg(Color::Yellow);
     }
+    terminal.backend().assert_buffer(&expected);
+}
+
+#[test]
+fn widgets_list_should_respect_padding() {
+    let backend = TestBackend::new(10, 4);
+    let mut terminal = Terminal::new(backend).unwrap();
+    let mut state = ListState::default();
+    state.select(Some(4));
+
+    state.padding(None, Some(Constraint::Percentage(50)));
+    terminal
+        .draw(|f| {
+            let size = f.size();
+            let items = vec![
+                ListItem::new("Item 0"),
+                ListItem::new("Item 1"),
+                ListItem::new("Item 2"),
+                ListItem::new("Item 3"),
+                ListItem::new("Item 4"),
+                ListItem::new("Item 5"),
+                ListItem::new("Item 6"),
+                ListItem::new("Item 7"),
+            ];
+            let list = List::new(items)
+                .highlight_symbol(">> ")
+                .repeat_highlight_symbol(true);
+            f.render_stateful_widget(list, size, &mut state);
+        })
+        .unwrap();
+    let expected = Buffer::with_lines(vec!["   Item 3 ", ">> Item 4 ", "   Item 5 ", "   Item 6 "]);
+    terminal.backend().assert_buffer(&expected);
+
+    state.padding(
+        Some(Constraint::Percentage(50)),
+        Some(Constraint::Percentage(50)),
+    );
+    terminal
+        .draw(|f| {
+            let size = f.size();
+            let items = vec![
+                ListItem::new("Item 0"),
+                ListItem::new("Item 1"),
+                ListItem::new("Item 2"),
+                ListItem::new("Item 3"),
+                ListItem::new("Item 4"),
+                ListItem::new("Item 5"),
+                ListItem::new("Item 6"),
+                ListItem::new("Item 7"),
+            ];
+            let list = List::new(items)
+                .highlight_symbol(">> ")
+                .repeat_highlight_symbol(true);
+            f.render_stateful_widget(list, size, &mut state);
+        })
+        .unwrap();
+    let expected = Buffer::with_lines(vec!["   Item 2 ", "   Item 3 ", ">> Item 4 ", "   Item 5 "]);
+    terminal.backend().assert_buffer(&expected);
+
+    state.padding(Some(Constraint::Max(1)), None);
+    terminal
+        .draw(|f| {
+            let size = f.size();
+            let items = vec![
+                ListItem::new("Item 0"),
+                ListItem::new("Item 1"),
+                ListItem::new("Item 2"),
+                ListItem::new("Item 3"),
+                ListItem::new("Item 4"),
+                ListItem::new("Item 5"),
+                ListItem::new("Item 6"),
+                ListItem::new("Item 7"),
+            ];
+            let list = List::new(items)
+                .highlight_symbol(">> ")
+                .repeat_highlight_symbol(true);
+            f.render_stateful_widget(list, size, &mut state);
+        })
+        .unwrap();
+    let expected = Buffer::with_lines(vec!["   Item 3 ", ">> Item 4 ", "   Item 5 ", "   Item 6 "]);
+    terminal.backend().assert_buffer(&expected);
+
+    //Prefers top padding to bottom padding
+    state.padding(Some(Constraint::Length(3)), Some(Constraint::Length(3)));
+    terminal
+        .draw(|f| {
+            let size = f.size();
+            let items = vec![
+                ListItem::new("Item 0"),
+                ListItem::new("Item 1"),
+                ListItem::new("Item 2"),
+                ListItem::new("Item 3"),
+                ListItem::new("Item 4"),
+                ListItem::new("Item 5"),
+                ListItem::new("Item 6"),
+                ListItem::new("Item 7"),
+            ];
+            let list = List::new(items)
+                .highlight_symbol(">> ")
+                .repeat_highlight_symbol(true);
+            f.render_stateful_widget(list, size, &mut state);
+        })
+        .unwrap();
+    let expected = Buffer::with_lines(vec!["   Item 1 ", "   Item 2 ", "   Item 3 ", ">> Item 4 "]);
+    terminal.backend().assert_buffer(&expected);
+}
+
+#[test]
+fn widgets_list_padding_doesnt_panic_for_offscreen_offset() {
+    let backend = TestBackend::new(10, 1);
+    let mut terminal = Terminal::new(backend).unwrap();
+    let mut state = ListState::default();
+    state.select(Some(7));
+
+    state.padding(
+        Some(Constraint::Length(0)),
+        Some(Constraint::Percentage(100)),
+    );
+    terminal
+        .draw(|f| {
+            let size = f.size();
+            let items = vec![
+                ListItem::new("Item 0"),
+                ListItem::new("Item 1"),
+                ListItem::new("Item 2"),
+                ListItem::new("Item 3"),
+                ListItem::new("Item 4"),
+                ListItem::new("Item 5"),
+                ListItem::new("Item 6"),
+                ListItem::new("Item 7"),
+            ];
+            let list = List::new(items)
+                .highlight_symbol(">> ")
+                .repeat_highlight_symbol(true);
+            f.render_stateful_widget(list, size, &mut state);
+        })
+        .unwrap();
+    let expected = Buffer::with_lines(vec![">> Item 7 "]);
+    terminal.backend().assert_buffer(&expected);
+
+    // now the state.offset is set to 7
+    // we set state.selected to 1
+    // and we just check that it doesnt cause a panic in the padding code
+
+    state.select(Some(1));
+    terminal
+        .draw(|f| {
+            let size = f.size();
+            let items = vec![
+                ListItem::new("Item 0"),
+                ListItem::new("Item 1"),
+                ListItem::new("Item 2"),
+                ListItem::new("Item 3"),
+                ListItem::new("Item 4"),
+                ListItem::new("Item 5"),
+                ListItem::new("Item 6"),
+                ListItem::new("Item 7"),
+            ];
+            let list = List::new(items)
+                .highlight_symbol(">> ")
+                .repeat_highlight_symbol(true);
+            f.render_stateful_widget(list, size, &mut state);
+        })
+        .unwrap();
+    let expected = Buffer::with_lines(vec![">> Item 1 "]);
     terminal.backend().assert_buffer(&expected);
 }

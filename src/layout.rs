@@ -43,6 +43,20 @@ impl Constraint {
             Constraint::Min(m) => length.max(m),
         }
     }
+
+    /// returns the new target padding based on the constraint
+    pub fn apply_for_padding(&self, total_length: u16, current_padding: u16) -> u16 {
+        match *self {
+            Constraint::Percentage(p) => total_length * p / 100,
+            Constraint::Ratio(num, den) => {
+                let r = num * u32::from(total_length) / den;
+                r as u16
+            }
+            Constraint::Length(l) => total_length.min(l),
+            Constraint::Max(m) => current_padding.min(m),
+            Constraint::Min(m) => current_padding.max(m),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

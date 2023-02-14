@@ -1,6 +1,8 @@
+use std::cmp::Ordering;
+
 use crate::{
     buffer::Buffer,
-    layout::{Corner, Rect},
+    layout::{Constraint, Corner, Rect},
     style::Style,
     text::Text,
     widgets::{Block, StatefulWidget, Widget},
@@ -10,6 +12,7 @@ use unicode_width::UnicodeWidthStr;
 #[derive(Debug, Clone, Default)]
 pub struct ListState {
     offset: usize,
+    padding: (Option<Constraint>, Option<Constraint>),
     selected: Option<usize>,
 }
 
@@ -23,6 +26,33 @@ impl ListState {
         if index.is_none() {
             self.offset = 0;
         }
+    }
+
+    /// Apply padding when scrolling selected item into view.
+    ///
+    /// The scrolling offset algorithm prioritizes `top_padding_constraint` over `bottom_padding_constraint`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use tui::layout::Constraint;
+    /// let mut state = tui::widgets::ListState::default();
+    /// state.padding(
+    ///     Some(Constraint::Percentage(50)),
+    ///     Some(Constraint::Percentage(50)),
+    /// );
+    /// // or
+    /// state.padding(None, Some(Constraint::Length(3)));
+    /// // or
+    /// state.padding(Some(Constraint::Max(6)), Some(Constraint::Min(3)));
+    /// // etc.
+    /// ```
+    pub fn padding(
+        &mut self,
+        top_padding_constraint: Option<Constraint>,
+        bottom_padding_constraint: Option<Constraint>,
+    ) {
+        self.padding = (top_padding_constraint, bottom_padding_constraint);
     }
 }
 
@@ -131,6 +161,7 @@ impl<'a> List<'a> {
     fn get_items_bounds(
         &self,
         selected: Option<usize>,
+        padding: (Option<Constraint>, Option<Constraint>),
         offset: usize,
         max_height: usize,
     ) -> (usize, usize) {
@@ -147,7 +178,42 @@ impl<'a> List<'a> {
         }
 
         let selected = selected.unwrap_or(0).min(self.items.len() - 1);
-        while selected >= end {
+
+        // This function prioritizes the ideal start padding to the ideal end padding
+        let padding_cmp_ideal = |start: usize, end: usize| {
+            let end_cmp_ideal = padding
+                .1
+                .map(|c| {
+                    let current_padding = self
+                        .items
+                        .get((selected + 1)..end)
+                        .map(|ir| ir.iter().map(|i| i.height()).sum::<usize>() as u16)
+                        .unwrap_or(0);
+                    current_padding.cmp(&c.apply_for_padding(max_height as u16, current_padding))
+                })
+                .unwrap_or(Ordering::Equal);
+            let start_cmp_ideal = padding
+                .0
+                .map(|c| {
+                    let current_padding = self
+                        .items
+                        .get(start..selected)
+                        .map(|ir| ir.iter().map(|i| i.height()).sum::<usize>() as u16)
+                        .unwrap_or(0);
+                    current_padding.cmp(&c.apply_for_padding(max_height as u16, current_padding))
+                })
+                .unwrap_or(Ordering::Equal);
+
+            if start_cmp_ideal == Ordering::Equal {
+                end_cmp_ideal.reverse()
+            } else {
+                start_cmp_ideal
+            }
+        };
+
+        while selected >= end
+            || (padding_cmp_ideal(start, end) == Ordering::Greater && end < self.items.len())
+        {
             height = height.saturating_add(self.items[end].height());
             end += 1;
             while height > max_height {
@@ -155,7 +221,7 @@ impl<'a> List<'a> {
                 start += 1;
             }
         }
-        while selected < start {
+        while selected < start || (padding_cmp_ideal(start, end) == Ordering::Less && start > 0) {
             start -= 1;
             height = height.saturating_add(self.items[start].height());
             while height > max_height {
@@ -190,7 +256,8 @@ impl<'a> StatefulWidget for List<'a> {
         }
         let list_height = list_area.height as usize;
 
-        let (start, end) = self.get_items_bounds(state.selected, state.offset, list_height);
+        let (start, end) =
+            self.get_items_bounds(state.selected, state.padding, state.offset, list_height);
         state.offset = start;
 
         let highlight_symbol = self.highlight_symbol.unwrap_or("");
