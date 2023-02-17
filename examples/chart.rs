@@ -10,7 +10,7 @@ use std::{
 };
 use tui::{
     backend::{Backend, CrosstermBackend},
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Corner, Direction, Layout},
     style::{Color, Modifier, Style},
     symbols,
     text::Span,
@@ -296,6 +296,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
                     Span::raw("2.5"),
                     Span::styled("5", Style::default().add_modifier(Modifier::BOLD)),
                 ]),
-        );
+        )
+        .legend_position(Corner::BottomRight);
     f.render_widget(chart, chunks[2]);
 }

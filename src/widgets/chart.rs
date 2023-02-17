@@ -5,7 +5,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::layout::Alignment;
 use crate::{
     buffer::Buffer,
-    layout::{Constraint, Rect},
+    layout::{Constraint, Corner, Rect},
     style::{Color, Style},
     symbols,
     text::{Span, Spans},
@@ -226,6 +226,8 @@ pub struct Chart<'a> {
     style: Style,
     /// Constraints used to determine whether the legend should be shown or not
     hidden_legend_constraints: (Constraint, Constraint),
+    /// The position of a legend
+    legend_position: Corner,
 }
 
 impl<'a> Chart<'a> {
@@ -237,6 +239,7 @@ impl<'a> Chart<'a> {
             style: Default::default(),
             datasets,
             hidden_legend_constraints: (Constraint::Ratio(1, 4), Constraint::Ratio(1, 4)),
+            legend_position: Corner::TopRight,
         }
     }
 
@@ -278,6 +281,21 @@ impl<'a> Chart<'a> {
     /// ```
     pub fn hidden_legend_constraints(mut self, constraints: (Constraint, Constraint)) -> Chart<'a> {
         self.hidden_legend_constraints = constraints;
+        self
+    }
+
+    /// Set the position of a legend.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use tui::widgets::Chart;
+    /// # use tui::layout::Corner;
+    /// let _chart: Chart = Chart::new(vec![])
+    ///     .legend_position(Corner::TopLeft);
+    /// ```
+    pub fn legend_position(mut self, position: Corner) -> Chart<'a> {
+        self.legend_position = position;
         self
     }
 
@@ -342,12 +360,25 @@ impl<'a> Chart<'a> {
                 && legend_width < max_legend_width
                 && legend_height < max_legend_height
             {
-                layout.legend_area = Some(Rect::new(
-                    layout.graph_area.right() - legend_width,
-                    layout.graph_area.top(),
-                    legend_width,
-                    legend_height,
-                ));
+                let (x, y) = match self.legend_position {
+                    Corner::TopRight => (
+                        layout.graph_area.right() - legend_width,
+                        layout.graph_area.top(),
+                    ),
+                    Corner::TopLeft => (
+                        layout.graph_area.left(),
+                        layout.graph_area.top() - legend_height
+                            + if self.y_axis.title.is_some() { 1 } else { 0 },
+                    ),
+                    Corner::BottomRight => (
+                        layout.graph_area.right() - legend_width,
+                        layout.graph_area.bottom()
+                            - legend_height
+                            - if self.x_axis.title.is_some() { 1 } else { 0 },
+                    ),
+                    Corner::BottomLeft => (layout.graph_area.left(), layout.graph_area.bottom()),
+                };
+                layout.legend_area = Some(Rect::new(x, y, legend_width, legend_height));
             }
         }
         layout
