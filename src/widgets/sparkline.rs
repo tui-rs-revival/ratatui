@@ -75,7 +75,7 @@ impl<'a> Sparkline<'a> {
 }
 
 impl<'a> Widget for Sparkline<'a> {
-    fn render(mut self, area: Rect, buf: &mut Buffer) {
+    fn render_ref(&mut self, area: Rect, buf: &mut Buffer) {
         let spark_area = match self.block.take() {
             Some(b) => {
                 let inner_area = b.inner(area);

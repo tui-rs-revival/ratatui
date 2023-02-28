@@ -133,7 +133,7 @@ impl<'a> Paragraph<'a> {
 }
 
 impl<'a> Widget for Paragraph<'a> {
-    fn render(mut self, area: Rect, buf: &mut Buffer) {
+    fn render_ref(&mut self, area: Rect, buf: &mut Buffer) {
         buf.set_style(area, self.style);
         let text_area = match self.block.take() {
             Some(b) => {

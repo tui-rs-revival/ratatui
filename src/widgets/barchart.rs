@@ -127,7 +127,7 @@ impl<'a> BarChart<'a> {
 }
 
 impl<'a> Widget for BarChart<'a> {
-    fn render(mut self, area: Rect, buf: &mut Buffer) {
+    fn render_ref(&mut self, area: Rect, buf: &mut Buffer) {
         buf.set_style(area, self.style);
 
         let chart_area = match self.block.take() {

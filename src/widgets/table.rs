@@ -364,7 +364,7 @@ impl TableState {
 impl<'a> StatefulWidget for Table<'a> {
     type State = TableState;
 
-    fn render(mut self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+    fn render_ref(&mut self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         if area.area() == 0 {
             return;
         }
@@ -485,9 +485,9 @@ fn render_cell(buf: &mut Buffer, cell: &Cell, area: Rect) {
 }
 
 impl<'a> Widget for Table<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render_ref(&mut self, area: Rect, buf: &mut Buffer) {
         let mut state = TableState::default();
-        StatefulWidget::render(self, area, buf, &mut state);
+        StatefulWidget::render_ref(self, area, buf, &mut state);
     }
 }
 

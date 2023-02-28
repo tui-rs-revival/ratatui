@@ -492,7 +492,7 @@ impl<'a> Chart<'a> {
 }
 
 impl<'a> Widget for Chart<'a> {
-    fn render(mut self, area: Rect, buf: &mut Buffer) {
+    fn render_ref(&mut self, area: Rect, buf: &mut Buffer) {
         if area.area() == 0 {
             return;
         }
@@ -586,7 +586,7 @@ impl<'a> Widget for Chart<'a> {
         }
 
         if let Some((x, y)) = layout.title_x {
-            let title = self.x_axis.title.unwrap();
+            let title = self.x_axis.title.as_ref().unwrap();
             let width = graph_area.right().saturating_sub(x);
             buf.set_style(
                 Rect {
@@ -597,11 +597,11 @@ impl<'a> Widget for Chart<'a> {
                 },
                 original_style,
             );
-            buf.set_spans(x, y, &title, width);
+            buf.set_spans(x, y, title, width);
         }
 
         if let Some((x, y)) = layout.title_y {
-            let title = self.y_axis.title.unwrap();
+            let title = self.y_axis.title.as_ref().unwrap();
             let width = graph_area.right().saturating_sub(x);
             buf.set_style(
                 Rect {
@@ -612,7 +612,7 @@ impl<'a> Widget for Chart<'a> {
                 },
                 original_style,
             );
-            buf.set_spans(x, y, &title, width);
+            buf.set_spans(x, y, title, width);
         }
     }
 }
