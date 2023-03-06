@@ -189,12 +189,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     let chart = Chart::new(datasets)
         .block(
             Block::default()
-                .title(Span::styled(
-                    "Chart 1",
-                    Style::default()
-                        .fg(Color::Cyan)
-                        .add_modifier(Modifier::BOLD),
-                ))
+                .title(
+                    Span::styled(
+                        "Chart 1",
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                )
                 .borders(Borders::ALL),
         )
         .x_axis(
@@ -226,12 +228,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     let chart = Chart::new(datasets)
         .block(
             Block::default()
-                .title(Span::styled(
-                    "Chart 2",
-                    Style::default()
-                        .fg(Color::Cyan)
-                        .add_modifier(Modifier::BOLD),
-                ))
+                .title(
+                    Span::styled(
+                        "Chart 2",
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                )
                 .borders(Borders::ALL),
         )
         .x_axis(
@@ -267,12 +271,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     let chart = Chart::new(datasets)
         .block(
             Block::default()
-                .title(Span::styled(
-                    "Chart 3",
-                    Style::default()
-                        .fg(Color::Cyan)
-                        .add_modifier(Modifier::BOLD),
-                ))
+                .title(
+                    Span::styled(
+                        "Chart 3",
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                )
                 .borders(Borders::ALL),
         )
         .x_axis(
