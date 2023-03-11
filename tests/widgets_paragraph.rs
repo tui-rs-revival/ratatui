@@ -25,7 +25,10 @@ fn widgets_paragraph_can_wrap_its_content() {
                 let paragraph = Paragraph::new(text)
                     .block(Block::default().borders(Borders::ALL))
                     .alignment(alignment)
-                    .wrap(Wrap { trim: true });
+                    .wrap(Wrap {
+                        trim: true,
+                        break_words: false,
+                    });
                 f.render_widget(paragraph, size);
             })
             .unwrap();
@@ -80,6 +83,76 @@ fn widgets_paragraph_can_wrap_its_content() {
 }
 
 #[test]
+fn widgets_paragraph_can_wrap_its_content_with_word_break_enabled() {
+    let test_case = |alignment, expected| {
+        let backend = TestBackend::new(20, 10);
+        let mut terminal = Terminal::new(backend).unwrap();
+
+        terminal
+            .draw(|f| {
+                let size = f.size();
+                let text = vec![Spans::from(SAMPLE_STRING)];
+                let paragraph = Paragraph::new(text)
+                    .block(Block::default().borders(Borders::ALL))
+                    .alignment(alignment)
+                    .wrap(Wrap {
+                        trim: true,
+                        break_words: true,
+                    });
+                f.render_widget(paragraph, size);
+            })
+            .unwrap();
+        terminal.backend().assert_buffer(&expected);
+    };
+
+    test_case(
+        Alignment::Left,
+        Buffer::with_lines(vec![
+            "┌──────────────────┐",
+            "│The library is bas│",
+            "│ed on the principl│",
+            "│e of immediate ren│",
+            "│dering with interm│",
+            "│ediate buffers. Th│",
+            "│is means that at e│",
+            "│ach new frame you │",
+            "│should build all w│",
+            "└──────────────────┘",
+        ]),
+    );
+    test_case(
+        Alignment::Right,
+        Buffer::with_lines(vec![
+            "┌──────────────────┐",
+            "│The library is bas│",
+            "│ed on the principl│",
+            "│e of immediate ren│",
+            "│dering with interm│",
+            "│ediate buffers. Th│",
+            "│is means that at e│",
+            "│ach new frame you │",
+            "│should build all w│",
+            "└──────────────────┘",
+        ]),
+    );
+    test_case(
+        Alignment::Center,
+        Buffer::with_lines(vec![
+            "┌──────────────────┐",
+            "│The library is bas│",
+            "│ed on the principl│",
+            "│e of immediate ren│",
+            "│dering with interm│",
+            "│ediate buffers. Th│",
+            "│is means that at e│",
+            "│ach new frame you │",
+            "│should build all w│",
+            "└──────────────────┘",
+        ]),
+    );
+}
+
+#[test]
 fn widgets_paragraph_renders_double_width_graphemes() {
     let backend = TestBackend::new(10, 10);
     let mut terminal = Terminal::new(backend).unwrap();
@@ -91,7 +164,10 @@ fn widgets_paragraph_renders_double_width_graphemes() {
             let text = vec![Spans::from(s)];
             let paragraph = Paragraph::new(text)
                 .block(Block::default().borders(Borders::ALL))
-                .wrap(Wrap { trim: true });
+                .wrap(Wrap {
+                    trim: true,
+                    break_words: false,
+                });
             f.render_widget(paragraph, size);
         })
         .unwrap();
@@ -123,7 +199,10 @@ fn widgets_paragraph_renders_mixed_width_graphemes() {
             let text = vec![Spans::from(s)];
             let paragraph = Paragraph::new(text)
                 .block(Block::default().borders(Borders::ALL))
-                .wrap(Wrap { trim: true });
+                .wrap(Wrap {
+                    trim: true,
+                    break_words: false,
+                });
             f.render_widget(paragraph, size);
         })
         .unwrap();

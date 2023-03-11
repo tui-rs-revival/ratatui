@@ -153,19 +153,28 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .style(Style::default().bg(Color::White).fg(Color::Black))
         .block(create_block("Left, wrap"))
         .alignment(Alignment::Left)
-        .wrap(Wrap { trim: true });
+        .wrap(Wrap {
+            trim: true,
+            break_words: false,
+        });
     f.render_widget(paragraph, chunks[1]);
     let paragraph = Paragraph::new(text.clone())
         .style(Style::default().bg(Color::White).fg(Color::Black))
         .block(create_block("Center, wrap"))
         .alignment(Alignment::Center)
-        .wrap(Wrap { trim: true })
+        .wrap(Wrap {
+            trim: true,
+            break_words: false,
+        })
         .scroll((app.scroll, 0));
     f.render_widget(paragraph, chunks[2]);
     let paragraph = Paragraph::new(text)
         .style(Style::default().bg(Color::White).fg(Color::Black))
         .block(create_block("Right, wrap"))
         .alignment(Alignment::Right)
-        .wrap(Wrap { trim: true });
+        .wrap(Wrap {
+            trim: true,
+            break_words: false,
+        });
     f.render_widget(paragraph, chunks[3]);
 }
