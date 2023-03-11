@@ -2,7 +2,7 @@ use crate::{
     backend::Backend,
     buffer::Buffer,
     layout::Rect,
-    widgets::{StatefulWidget, Widget},
+    widgets::{InteractiveWidget, StatefulWidget, Widget},
 };
 use std::io;
 
@@ -131,6 +131,20 @@ where
         W: StatefulWidget,
     {
         widget.render(area, self.terminal.current_buffer_mut(), state);
+    }
+
+    pub fn render_interactive<W>(&mut self, widget: W, area: Rect, state: &W::State)
+    where
+        W: InteractiveWidget,
+    {
+        widget.render(area, self, state);
+    }
+
+    pub fn render_interactive_mut<W>(&mut self, widget: W, area: Rect, state: &mut W::State)
+    where
+        W: InteractiveWidget,
+    {
+        widget.render_mut(area, self, state);
     }
 
     /// After drawing this frame, make the cursor visible and put it at the specified (x, y)

@@ -27,6 +27,10 @@ mod reflow;
 mod sparkline;
 mod table;
 mod tabs;
+mod text_input;
+
+#[cfg(feature = "crossterm")]
+mod crossterm_interactive_widget;
 
 pub use self::barchart::BarChart;
 pub use self::block::{Block, BorderType};
@@ -38,7 +42,13 @@ pub use self::paragraph::{Paragraph, Wrap};
 pub use self::sparkline::Sparkline;
 pub use self::table::{Cell, Row, Table, TableState};
 pub use self::tabs::Tabs;
+pub use self::text_input::{TextInput, TextInputState};
 
+#[cfg(feature = "crossterm")]
+pub use self::crossterm_interactive_widget::{InteractiveWidgetState, InteractionOutcome};
+
+use crate::backend::Backend;
+use crate::Frame;
 use crate::{buffer::Buffer, layout::Rect};
 use bitflags::bitflags;
 
@@ -181,4 +191,22 @@ pub trait Widget {
 pub trait StatefulWidget {
     type State;
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State);
+}
+
+pub trait InteractiveWidget {
+    type State;
+
+    fn render<'a, B: Backend + 'a>(
+        self,
+        area: Rect,
+        frame: &mut Frame<'a, B>,
+        state: &Self::State,
+    );
+
+    fn render_mut<'a, B: Backend + 'a>(
+        self,
+        area: Rect,
+        frame: &mut Frame<'a, B>,
+        state: &mut Self::State,
+    );
 }
