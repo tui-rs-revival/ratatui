@@ -384,11 +384,65 @@ where
         self
     }
 
+    /// Define the viewport of the canvas.
+    ///
+    /// Only the points whose coordinates are within the viewport are displayed. When you render
+    /// the canvas using Frame::render_widget, you give an area to draw the widget to (a Rect) and
+    /// the crate translates the floating point coordinates to those used by our internal terminal
+    /// representation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use tui::style::Color;
+    /// # use tui::widgets::{Block, Borders};
+    /// # use tui::widgets::canvas::{Canvas, Map, MapResolution};
+    /// let canvas = Canvas::default()
+    ///     .block(Block::default().borders(Borders::ALL).title("World"))
+    ///     .paint(|ctx| {
+    ///         ctx.draw(&Map {
+    ///             color: Color::White,
+    ///             resolution: MapResolution::High,
+    ///         });
+    ///     })
+    ///     .x_bounds([-180.0, 180.0])
+    ///     .y_bounds([-90.0, 90.0]);
+    /// ```
+    ///
+    /// If you were to "zoom" to a certain part of the world you may want to choose different
+    /// bounds.
     pub fn x_bounds(mut self, bounds: [f64; 2]) -> Canvas<'a, F> {
         self.x_bounds = bounds;
         self
     }
 
+    /// Define the viewport of the canvas.
+    ///
+    /// Only the points whose coordinates are within the viewport are displayed. When you render
+    /// the canvas using Frame::render_widget, you give an area to draw the widget to (a Rect) and
+    /// the crate translates the floating point coordinates to those used by our internal terminal
+    /// representation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use tui::style::Color;
+    /// # use tui::widgets::{Block, Borders};
+    /// # use tui::widgets::canvas::{Canvas, Map, MapResolution};
+    /// let canvas = Canvas::default()
+    ///     .block(Block::default().borders(Borders::ALL).title("World"))
+    ///     .paint(|ctx| {
+    ///         ctx.draw(&Map {
+    ///             color: Color::White,
+    ///             resolution: MapResolution::High,
+    ///         });
+    ///     })
+    ///     .x_bounds([-180.0, 180.0])
+    ///     .y_bounds([-90.0, 90.0]);
+    /// ```
+    ///
+    /// If you were to "zoom" to a certain part of the world you may want to choose different
+    /// bounds.
     pub fn y_bounds(mut self, bounds: [f64; 2]) -> Canvas<'a, F> {
         self.y_bounds = bounds;
         self
