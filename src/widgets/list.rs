@@ -28,8 +28,8 @@ impl ListState {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ListItem<'a> {
-    content: Text<'a>,
-    style: Style,
+    pub(crate) content: Text<'a>,
+    pub(crate) style: Style,
 }
 
 impl<'a> ListItem<'a> {
