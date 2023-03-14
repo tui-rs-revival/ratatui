@@ -163,6 +163,7 @@
 
 pub mod backend;
 pub mod buffer;
+pub mod flex_layout;
 pub mod layout;
 pub mod style;
 pub mod symbols;

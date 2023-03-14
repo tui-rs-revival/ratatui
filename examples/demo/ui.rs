@@ -1,7 +1,8 @@
 use crate::app::App;
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
+    flex_layout::{FlexLayout, FlexSpace, LayoutOverflowError},
+    layout::{Alignment, Constraint, Direction, Rect},
     style::{Color, Modifier, Style},
     symbols,
     text::{Span, Spans},
@@ -14,62 +15,99 @@ use tui::{
 };
 
 pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    let chunks = Layout::default()
-        .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
-        .split(f.size());
-    let titles = app
-        .tabs
-        .titles
-        .iter()
-        .map(|t| Spans::from(Span::styled(*t, Style::default().fg(Color::Green))))
-        .collect();
-    let tabs = Tabs::new(titles)
-        .block(Block::default().borders(Borders::ALL).title(app.title))
-        .highlight_style(Style::default().fg(Color::Yellow))
-        .select(app.tabs.index);
-    f.render_widget(tabs, chunks[0]);
-    match app.tabs.index {
-        0 => draw_first_tab(f, app, chunks[1]),
-        1 => draw_second_tab(f, app, chunks[1]),
-        2 => draw_third_tab(f, app, chunks[1]),
-        _ => {}
+    let layout = FlexLayout::new(Direction::Vertical)
+        .flex_spaces([FlexSpace::new(3), FlexSpace::new(0).growable()]);
+
+    let area = f.size();
+
+    match layout.try_split(area) {
+        Ok(chunks) => {
+            let titles = app
+                .tabs
+                .titles
+                .iter()
+                .map(|t| Spans::from(Span::styled(*t, Style::default().fg(Color::Green))))
+                .collect();
+
+            let tabs = Tabs::new(titles)
+                .block(Block::default().borders(Borders::ALL).title(app.title))
+                .highlight_style(Style::default().fg(Color::Yellow))
+                .select(app.tabs.index);
+
+            f.render_widget(tabs, chunks[0]);
+
+            let result = match app.tabs.index {
+                0 => draw_first_tab(f, app, chunks[1]),
+                1 => draw_second_tab(f, app, chunks[1]),
+                2 => draw_third_tab(f, app, chunks[1]),
+                _ => Ok(()),
+            };
+
+            if let Err(e) = result {
+                draw_layout_overflow_error(f, e, chunks[1])
+            }
+        }
+        Err(e) => draw_layout_overflow_error(f, e, area),
+    }
+}
+
+fn draw_layout_overflow_error<B>(f: &mut Frame<B>, e: LayoutOverflowError, area: Rect)
+where
+    B: Backend,
+{
+    let (message, width, height) = match e.direction {
+        Direction::Horizontal => ("Try making the\nterminal wider", 14, 2),
+        Direction::Vertical => ("Try making the terminal higher", 30, 1),
     };
+
+    let centered_vertical = FlexLayout::new(Direction::Vertical)
+        .margins(FlexSpace::new(0).growable())
+        .flex_spaces([FlexSpace::new(height)])
+        .split(area)[0];
+
+    let centered = FlexLayout::new(Direction::Horizontal)
+        .margins(FlexSpace::new(0).growable())
+        .flex_spaces([FlexSpace::new(width)])
+        .split(centered_vertical)[0];
+
+    let paragraph = Paragraph::new(message).alignment(Alignment::Center);
+
+    f.render_widget(paragraph, centered);
 }
 
-fn draw_first_tab<B>(f: &mut Frame<B>, app: &mut App, area: Rect)
+fn draw_first_tab<B>(f: &mut Frame<B>, app: &mut App, area: Rect) -> Result<(), LayoutOverflowError>
 where
     B: Backend,
 {
-    let chunks = Layout::default()
-        .constraints(
-            [
-                Constraint::Length(9),
-                Constraint::Min(8),
-                Constraint::Length(7),
-            ]
-            .as_ref(),
-        )
-        .split(area);
-    draw_gauges(f, app, chunks[0]);
-    draw_charts(f, app, chunks[1]);
+    let chunks = FlexLayout::new(Direction::Vertical)
+        .flex_spaces([
+            FlexSpace::new(9),
+            FlexSpace::new(8).growable(),
+            FlexSpace::new(7),
+        ])
+        .try_split(area)?;
+
+    draw_gauges(f, app, chunks[0])?;
+    draw_charts(f, app, chunks[1])?;
     draw_text(f, chunks[2]);
+
+    Ok(())
 }
 
-fn draw_gauges<B>(f: &mut Frame<B>, app: &mut App, area: Rect)
+fn draw_gauges<B>(f: &mut Frame<B>, app: &mut App, area: Rect) -> Result<(), LayoutOverflowError>
 where
     B: Backend,
 {
-    let chunks = Layout::default()
-        .constraints(
-            [
-                Constraint::Length(2),
-                Constraint::Length(3),
-                Constraint::Length(1),
-            ]
-            .as_ref(),
-        )
-        .margin(1)
-        .split(area);
+    let chunks = FlexLayout::new(Direction::Horizontal)
+        .margins(FlexSpace::new(1))
+        .flex_spaces([FlexSpace::new(0).growable()])
+        .try_split(area)?;
+
+    let chunks = FlexLayout::new(Direction::Vertical)
+        .margins(FlexSpace::new(1))
+        .flex_spaces([FlexSpace::new(2), FlexSpace::new(3), FlexSpace::new(1)])
+        .try_split(chunks[0])?;
+
     let block = Block::default().borders(Borders::ALL).title("Graphs");
     f.render_widget(block, area);
 
@@ -107,30 +145,31 @@ where
         })
         .ratio(app.progress);
     f.render_widget(line_gauge, chunks[2]);
+
+    Ok(())
 }
 
-fn draw_charts<B>(f: &mut Frame<B>, app: &mut App, area: Rect)
+fn draw_charts<B>(f: &mut Frame<B>, app: &mut App, area: Rect) -> Result<(), LayoutOverflowError>
 where
     B: Backend,
 {
-    let constraints = if app.show_chart {
-        vec![Constraint::Percentage(50), Constraint::Percentage(50)]
+    let spaces = if app.show_chart {
+        vec![FlexSpace::new(0).growable(), FlexSpace::new(0).growable()]
     } else {
-        vec![Constraint::Percentage(100)]
+        vec![FlexSpace::new(0).growable()]
     };
-    let chunks = Layout::default()
-        .constraints(constraints)
-        .direction(Direction::Horizontal)
-        .split(area);
+
+    let chunks = FlexLayout::new(Direction::Horizontal)
+        .flex_spaces(spaces)
+        .try_split(area)?;
     {
-        let chunks = Layout::default()
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-            .split(chunks[0]);
+        let chunks = FlexLayout::new(Direction::Vertical)
+            .flex_spaces([FlexSpace::new(0).growable(), FlexSpace::new(0).growable()].as_ref())
+            .try_split(chunks[0])?;
         {
-            let chunks = Layout::default()
-                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-                .direction(Direction::Horizontal)
-                .split(chunks[0]);
+            let chunks = FlexLayout::new(Direction::Horizontal)
+                .flex_spaces([FlexSpace::new(0).growable(), FlexSpace::new(0).growable()].as_ref())
+                .try_split(chunks[0])?;
 
             // Draw tasks
             let tasks: Vec<ListItem> = app
@@ -254,6 +293,8 @@ where
             );
         f.render_widget(chart, chunks[1]);
     }
+
+    Ok(())
 }
 
 fn draw_text<B>(f: &mut Frame<B>, area: Rect)
@@ -297,14 +338,18 @@ where
     f.render_widget(paragraph, area);
 }
 
-fn draw_second_tab<B>(f: &mut Frame<B>, app: &mut App, area: Rect)
+fn draw_second_tab<B>(
+    f: &mut Frame<B>,
+    app: &mut App,
+    area: Rect,
+) -> Result<(), LayoutOverflowError>
 where
     B: Backend,
 {
-    let chunks = Layout::default()
-        .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
-        .direction(Direction::Horizontal)
-        .split(area);
+    let chunks = FlexLayout::new(Direction::Horizontal)
+        .flex_spaces([FlexSpace::new(0).growth(30), FlexSpace::new(0).growth(70)].as_ref())
+        .try_split(area)?;
+
     let up_style = Style::default().fg(Color::Green);
     let failure_style = Style::default()
         .fg(Color::Red)
@@ -329,6 +374,7 @@ where
             Constraint::Length(15),
             Constraint::Length(10),
         ]);
+
     f.render_widget(table, chunks[0]);
 
     let map = Canvas::default()
@@ -378,16 +424,21 @@ where
         .x_bounds([-180.0, 180.0])
         .y_bounds([-90.0, 90.0]);
     f.render_widget(map, chunks[1]);
+
+    Ok(())
 }
 
-fn draw_third_tab<B>(f: &mut Frame<B>, _app: &mut App, area: Rect)
+fn draw_third_tab<B>(
+    f: &mut Frame<B>,
+    _app: &mut App,
+    area: Rect,
+) -> Result<(), LayoutOverflowError>
 where
     B: Backend,
 {
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
-        .split(area);
+    let chunks = FlexLayout::new(Direction::Horizontal)
+        .flex_spaces([FlexSpace::new(0).growable(), FlexSpace::new(0).growable()])
+        .try_split(area)?;
     let colors = [
         Color::Reset,
         Color::Black,
@@ -426,4 +477,6 @@ where
             Constraint::Ratio(1, 3),
         ]);
     f.render_widget(table, chunks[0]);
+
+    Ok(())
 }
